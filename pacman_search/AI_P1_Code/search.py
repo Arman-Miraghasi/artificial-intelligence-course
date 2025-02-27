@@ -90,12 +90,58 @@ def depthFirstSearch(problem: SearchProblem) -> List[Directions]:
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # # just for test
+    # print("Start:", problem.getStartState())
+    # print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
+    # print("Start's successors:", problem.getSuccessors(problem.getStartState()))
+
+    from util import Stack
+    # initialization
+    fringe = Stack()  
+    visited = []                            
+    dfs_path = []                        
+    path_to_current_state = Stack()             
+
+    # start searching :)
+    fringe.push(problem.getStartState())
+    current_state = fringe.pop()
+    while not problem.isGoalState(current_state):
+        if current_state not in visited:
+            visited.append(current_state)
+            successors = problem.getSuccessors(current_state)
+            for child,direction,cost in successors:
+                fringe.push(child)
+                temporary_path = dfs_path + [direction]
+                path_to_current_state.push(temporary_path)
+        current_state = fringe.pop()
+        dfs_path = path_to_current_state.pop()
+    return dfs_path
 
 def breadthFirstSearch(problem: SearchProblem) -> List[Directions]:
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    from util import Queue
+    # initialization
+    fringe = Queue()
+    visited = []                            
+    bfs_path=[]   
+    path_to_current_state=Queue()       
+
+    # start searching :)                 
+    fringe.push(problem.getStartState())                                  
+    current_state = fringe.pop()
+    while not problem.isGoalState(current_state):
+        if current_state not in visited:
+            visited.append(current_state)    
+            successors = problem.getSuccessors(current_state)
+            for child,direction,cost in successors:
+                fringe.push(child)
+                temporary_path = bfs_path + [direction]
+                path_to_current_state.push(temporary_path)
+        current_state = fringe.pop()
+        bfs_path = path_to_current_state.pop()
+        
+    return bfs_path
 
 def uniformCostSearch(problem: SearchProblem) -> List[Directions]:
     """Search the node of least total cost first."""
