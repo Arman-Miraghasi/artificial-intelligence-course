@@ -153,6 +153,7 @@ def uniformCostSearch(problem: SearchProblem) -> List[Directions]:
     ucs_path = []                                     
     path_to_current_state = PriorityQueue()   
 
+    # start searching :)
     fringe.push(problem.getStartState(), 0)            
     current_state = fringe.pop()
     while not problem.isGoalState(current_state):
@@ -161,10 +162,10 @@ def uniformCostSearch(problem: SearchProblem) -> List[Directions]:
             successors = problem.getSuccessors(current_state)
             for child,direction,cost in successors:
                 temporary_path = ucs_path + [direction]
-                cost = problem.getCostOfActions(temporary_path)
+                cost_till_here = problem.getCostOfActions(temporary_path)
                 if child not in visited:
-                    fringe.push(child, cost)
-                    path_to_current_state.push(temporary_path, cost)
+                    fringe.push(child, cost_till_here)
+                    path_to_current_state.push(temporary_path, cost_till_here)
         current_state = fringe.pop()
         ucs_path = path_to_current_state.pop()    
     return ucs_path
@@ -179,7 +180,29 @@ def nullHeuristic(state, problem=None) -> float:
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic) -> List[Directions]:
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    from util import PriorityQueue
+    # initialization
+    fringe = PriorityQueue()    
+    visited = []                               
+    astar_path = []                                     
+    path_to_current_state = PriorityQueue()   
+
+    # start searching :)
+    fringe.push(problem.getStartState(), 0)
+    current_state = fringe.pop()           
+    while not problem.isGoalState(current_state):
+        if current_state not in visited:
+            visited.append(current_state)
+            successors = problem.getSuccessors(current_state)
+            for child,direction,cost in successors:
+                temporary_path = astar_path + [direction]
+                total_cost = problem.getCostOfActions(temporary_path) + heuristic(child, problem)
+                if child not in visited:
+                    fringe.push(child, total_cost)
+                    path_to_current_state.push(temporary_path, total_cost)
+        current_state = fringe.pop()
+        astar_path = path_to_current_state.pop()    
+    return astar_path
 
 # Abbreviations
 bfs = breadthFirstSearch
