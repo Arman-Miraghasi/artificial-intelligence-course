@@ -97,78 +97,80 @@ def depthFirstSearch(problem: SearchProblem) -> List[Directions]:
 
     from util import Stack
     # initialization
-    fringe = Stack()  
-    visited = []                            
-    dfs_path = []                        
-    path_to_current_state = Stack()             
+    visited = set()
+    fringe = Stack()
+    startState = problem.getStartState()
+    fringe.push((startState, []))  
 
     # start searching :)
-    fringe.push(problem.getStartState())
-    current_state = fringe.pop()
-    while not problem.isGoalState(current_state):
-        if current_state not in visited:
-            visited.append(current_state)
-            successors = problem.getSuccessors(current_state)
-            for child,direction,cost in successors:
-                fringe.push(child)
-                temporary_path = dfs_path + [direction]
-                path_to_current_state.push(temporary_path)
-        current_state = fringe.pop()
-        dfs_path = path_to_current_state.pop()
-    return dfs_path
+    while not fringe.isEmpty():
+        state, actions = fringe.pop()
+
+        if problem.isGoalState(state):
+            return actions
+
+        if state not in visited:
+            visited.add(state)
+            successors = problem.getSuccessors(state)
+            for childState, direction, stepCost in successors:
+                newActions = actions + [direction]
+                fringe.push((childState, newActions))
+
+    print("This search doesn't have any answer!")
+    return []
 
 def breadthFirstSearch(problem: SearchProblem) -> List[Directions]:
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
     from util import Queue
     # initialization
+    visited = set()
     fringe = Queue()
-    visited = []                            
-    bfs_path = []   
-    path_to_current_state = Queue()       
+    startState = problem.getStartState()
+    fringe.push((startState, []))  
 
-    # start searching :)                 
-    fringe.push(problem.getStartState())                                  
-    current_state = fringe.pop()
-    while not problem.isGoalState(current_state):
-        if current_state not in visited:
-            visited.append(current_state)    
-            successors = problem.getSuccessors(current_state)
-            for child,direction,cost in successors:
-                fringe.push(child)
-                temporary_path = bfs_path + [direction]
-                path_to_current_state.push(temporary_path)
-        current_state = fringe.pop()
-        bfs_path = path_to_current_state.pop()
-        
-    return bfs_path
+    # start searching :)
+    while not fringe.isEmpty():
+        state, actions = fringe.pop()
+
+        if problem.isGoalState(state):
+            return actions
+
+        if state not in visited:
+            visited.add(state)
+            successors = problem.getSuccessors(state)
+            for childState, direction, stepCost in successors:
+                newActions = actions + [direction]
+                fringe.push((childState, newActions))
+
+    print("This search doesn't have any answer!")
+    return []
 
 def uniformCostSearch(problem: SearchProblem) -> List[Directions]:
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
     from util import PriorityQueue
     # initialization
+    visited = set()
     fringe = PriorityQueue()
-    visited = []                                
-    ucs_path = []                                     
-    path_to_current_state = PriorityQueue()   
+    startState = problem.getStartState()
+    fringe.push((startState, [], 0), 0)
 
-    # start searching :)
-    fringe.push(problem.getStartState(), 0)            
-    current_state = fringe.pop()
-    while not problem.isGoalState(current_state):
-        if current_state not in visited:
-            visited.append(current_state)
-            successors = problem.getSuccessors(current_state)
-            for child,direction,cost in successors:
-                temporary_path = ucs_path + [direction]
-                cost_till_here = problem.getCostOfActions(temporary_path)
-                if child not in visited:
-                    fringe.push(child, cost_till_here)
-                    path_to_current_state.push(temporary_path, cost_till_here)
-        current_state = fringe.pop()
-        ucs_path = path_to_current_state.pop()    
-    return ucs_path
+    while not fringe.isEmpty():
+        state, actions, cost = fringe.pop()
+
+        if problem.isGoalState(state):
+            return actions
+
+        if state not in visited:
+            visited.add(state)
+            for childState, direction, childCost in problem.getSuccessors(state):
+                newAction = actions + [direction]
+                newCost = cost + childCost
+                fringe.push((childState, newAction, newCost), newCost)
+
+    print("This search doesn't have any answer!")
+    return []
 
 def nullHeuristic(state, problem=None) -> float:
     """
@@ -182,27 +184,25 @@ def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic) -> List[Directi
     "*** YOUR CODE HERE ***"
     from util import PriorityQueue
     # initialization
-    fringe = PriorityQueue()    
-    visited = []                               
-    astar_path = []                                     
-    path_to_current_state = PriorityQueue()   
+    visited = set()
+    fringe = PriorityQueue()
+    startState = problem.getStartState()
+    fringe.push((startState, [], 0), heuristic(startState, problem))
 
-    # start searching :)
-    fringe.push(problem.getStartState(), 0)
-    current_state = fringe.pop()           
-    while not problem.isGoalState(current_state):
-        if current_state not in visited:
-            visited.append(current_state)
-            successors = problem.getSuccessors(current_state)
-            for child,direction,cost in successors:
-                temporary_path = astar_path + [direction]
-                total_cost = problem.getCostOfActions(temporary_path) + heuristic(child, problem)
-                if child not in visited:
-                    fringe.push(child, total_cost)
-                    path_to_current_state.push(temporary_path, total_cost)
-        current_state = fringe.pop()
-        astar_path = path_to_current_state.pop()    
-    return astar_path
+    while not fringe.isEmpty():
+        state, actions, cost = fringe.pop()
+
+        if problem.isGoalState(state):
+            return actions
+
+        if state not in visited:
+            visited.add(state)
+            for childState, direction, childCost in problem.getSuccessors(state):
+                newAction = actions + [direction]
+                newCost = cost + childCost
+                fringe.push((childState, newAction, newCost), newCost + heuristic(childState, problem))
+
+    return []
 
 # Abbreviations
 bfs = breadthFirstSearch
