@@ -156,6 +156,7 @@ def uniformCostSearch(problem: SearchProblem) -> List[Directions]:
     startState = problem.getStartState()
     fringe.push((startState, [], 0), 0)
 
+    # start searching :)
     while not fringe.isEmpty():
         state, actions, cost = fringe.pop()
 
@@ -189,6 +190,7 @@ def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic) -> List[Directi
     startState = problem.getStartState()
     fringe.push((startState, [], 0), heuristic(startState, problem))
 
+    # start searching :)
     while not fringe.isEmpty():
         state, actions, cost = fringe.pop()
 
