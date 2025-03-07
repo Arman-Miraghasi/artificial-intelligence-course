@@ -389,7 +389,7 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
             closest_corner_distance = float("inf")
             closest_corner = unvisited_corners[0]
             for corner in unvisited_corners:
-                distance = mazeDistance(position, corner, problem.startingGameState)
+                distance = util.euclideanDistance(position, corner)
                 # distance = util.manhattanDistance(position, corner)
                 if distance < closest_corner_distance:
                     closest_corner_distance = distance
