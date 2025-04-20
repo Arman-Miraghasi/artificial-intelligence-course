@@ -1,1 +1,5 @@
 *.pdf
+*.docx
+**/__pycache__/
+**/sudoku_venv/
+**/windows_venv/
