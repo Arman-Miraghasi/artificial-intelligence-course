@@ -6,6 +6,7 @@ from board import Board
 from refresher import Refresher
 
 from queue import Queue
+from collections import deque
 
 # my_variables = [] is declared in myVariable.py
 constraint_list = []
@@ -74,7 +75,12 @@ def node_consistency(refresher: Refresher) -> bool:
     :param refresher: A Refresher object to update the UI.
     :return: True if node consistency is maintained, False otherwise.
     """
-    # YOUR CODE
+    for v in my_variables:
+        if v.value is not None:
+            if not g.is_node_satisfied(v, v.value):
+                return False
+    return True
+
 
 def backtrack(do_arc_consistency: bool, do_mrv: bool, do_lcv: bool, refresher: Refresher):
     """
@@ -95,7 +101,42 @@ def backtrack(do_arc_consistency: bool, do_mrv: bool, do_lcv: bool, refresher: R
     Use `refresher.refresh_screen()` in middle of your code to update the sudoku on screen.
     :return: True if a solution is found, False otherwise.
     """
-    # YOUR CODE
+    # Update UI before any work
+    refresher.refresh_screen()
+
+    # 1. Check for completion
+    if g.is_assignment_complete():
+        return True
+
+    # 2. Select the next variable to assign
+    var = select_unassigned_variable(do_mrv)
+
+    # 3. Try each value in the chosen order
+    for value in order_domain_values(var, do_lcv):
+        # Assign value and check local consistency
+        var.value = value
+        set_doms_to_values()
+
+        if g.is_assignment_consistent(var):
+            # Backup domains before inference
+            backup = extract_domains()
+
+            # 4. Inference step (forward checking or AC)
+            if inference(do_arc_consistency, refresher):
+                # Recursive call
+                if backtrack(do_arc_consistency, do_mrv, do_lcv, refresher):
+                    return True
+
+            # Restore domains if inference or deeper search failed
+            restore_domains(backup)
+
+        # Unassign variable before next trial
+        var.value = None
+        # Optional UI update after unassignment
+        refresher.refresh_screen()
+
+    # 5. No valid assignment found for this branch
+    return False
 
 def inference(do_arc_consistency: bool, refresher: Refresher) -> bool:
     """
@@ -115,7 +156,18 @@ def arc_consistency(refresher: Refresher) -> bool:
     Use `refresher.refresh_screen()` in middle of your code to update the sudoku on screen.
     :return: True if arc consistency is maintained, False otherwise.
     """
-    # YOUR CODE
+    queue: Queue = g.get_arcs()
+
+    while not queue.empty():
+        xi, xj = queue.get()
+        if revise(xi, xj):
+            refresher.refresh_screen()
+            if not xi.remaining_domain:
+                return False
+            for xk in g.neighbors(xi):
+                if xk is not xj:
+                    queue.put((xk, xi))
+    return True
 
 def revise(v1: myVariable, v2: myVariable):
     """
@@ -128,7 +180,15 @@ def revise(v1: myVariable, v2: myVariable):
     :param v2: Second variable.
     :return: True if the domain of v1 was revised, False otherwise.
     """
-    # YOUR CODE
+    revised = False
+
+    for x1 in set(v1.remaining_domain):
+        if not any(g.is_arc_satisfied(v1, v2, x1, x2) for x2 in v2.remaining_domain):
+            v1.remaining_domain.remove(x1)
+            revised = True
+
+    return revised
+
     
 def select_unassigned_variable(do_mrv: bool) -> myVariable:
     if do_mrv:
@@ -137,14 +197,28 @@ def select_unassigned_variable(do_mrv: bool) -> myVariable:
         return select_static_order_variable()
     
 def select_static_order_variable() -> myVariable:
-    pass
-    # YOUR CODE
+    """
+    Selects the first unassigned variable in the static (insertion) order.
+    """
+    for v in my_variables:
+        if v.value is None:
+            return v
+    return None
 
 def minimum_remaining_values() -> myVariable:
     """
     Returns a variable with the lowest remaining domain count.
     """
-    # YOUR CODE
+    best_var = None
+    best_size = float('inf')
+    for v in my_variables:
+        if v.value is None:
+            size = len(v.remaining_domain)
+            if size < best_size:
+                best_var, best_size = v, size
+    if best_var is None:
+        raise RuntimeError("No unassigned variables available for MRV")
+    return best_var
         
 def order_domain_values(v: myVariable, do_lcv: bool) -> List[int]:
     if do_lcv:
@@ -153,8 +227,11 @@ def order_domain_values(v: myVariable, do_lcv: bool) -> List[int]:
         return static_order_domains(v)
     
 def static_order_domains(v: myVariable) -> List[int]:
-    pass
-    # YOUR CODE
+    """
+    Returns the values in `v.remaining_domain` in ascending order.
+    """
+    # Ensure iterable and return sorted list
+    return sorted(list(v.remaining_domain))
 
 def least_constraining_value(v: myVariable) -> List[int]:
     """

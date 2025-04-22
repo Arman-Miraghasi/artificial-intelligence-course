@@ -3,6 +3,7 @@ from pycsp3 import *
 from myCSP.mycsp import *
 from board import Board
 from refresher import *
+from main import SudokuGUI
 
 class Layout:
     """
@@ -45,24 +46,6 @@ class Layout:
         # Create a 9x9 array of variables with domain 1-9
         x = VarArray(size=[n, n], dom=range(1, n + 1))
 
-        # # Collect constraints
-        # constraints = []
-        # # All rows and columns must have different values
-        # constraints.append(AllDifferent(x, matrix=True))
-        # # 3x3 subgrid constraints
-        # for bi in range(3):
-        #     for bj in range(3):
-        #         block = [x[3*bi + di][3*bj + dj] for di in range(3) for dj in range(3)]
-        #         constraints.append(AllDifferent(block))
-        # # Add initial clues from the board
-        # for i in range(n):
-        #     for j in range(n):
-        #         val = board.layout_board[i][j]
-        #         if val != 0:
-        #             constraints.append(x[i][j] == val)
-
-        # # Post all constraints at once
-        # satisfy(*constraints)
         clues = board.layout_board
         satisfy(
             # imposing distinct values on each row and each column
@@ -81,6 +64,7 @@ class Layout:
             for i in range(n):
                 for j in range(n):
                     board.answer_board[i][j] = value(x[i][j])
+                    board.guess_board = board.empty_board
             print('answer:', board.answer_board)
             return True
         else:
@@ -100,7 +84,68 @@ class Layout:
         Solves the Sudoku puzzle using our csp solver (mycsp) with various heuristics.
         Returns True if solution found, False otherwise.
         """
-        # YOUR CODE
+        # Clear any previous model
+        clear()
+
+        n = 9
+
+        x = myVarArray(name="my_variables", size=[n ,n], dom=range(1, n + 1))
+        my_constraints = []
+        # 1) “Clue” constraints (unary) for the given board
+        for i in range(n):
+            for j in range(n):
+                clue = board.layout_board[i][j]
+                if clue != 0:
+                    # x[i][j] == clue
+                    c = myUnaryConstraint(var=x[i][j],
+                                        num=clue,
+                                        relation="=",
+                                        relation_name="=")
+                    my_constraints.append(c)
+        # 2) Row all-different
+        for i in range(n):
+            row_vars = [x[i][j] for j in range(n)]
+            all_diff = myAllDifferent(row_vars)
+            for c in all_diff.get_constraints():
+                my_constraints.append(c)
+
+        # 3) Column all-different
+        for j in range(n):
+            col_vars = [x[i][j] for i in range(n)]
+            all_diff = myAllDifferent(col_vars)
+            for c in all_diff.get_constraints():
+                my_constraints.append(c)
+
+        # 4) 3x3 block all-different
+        block_size = 3
+        for bi in range(0, n, block_size):
+            for bj in range(0, n, block_size):
+                block_vars = [x[bi + di][bj + dj]
+                            for di in range(block_size)
+                            for dj in range(block_size)]
+                all_diff = myAllDifferent(block_vars)
+                for c in all_diff.get_constraints():
+                    my_constraints.append(c)
+        my_satisfy(*my_constraints)
+        refresher = Refresher(vars=x,
+                              board=board,
+                              real_time=real_time,
+                              refresh=refresh,
+                              get_stop_event=get_stop_event)
+        if my_solve(do_unary_check,
+                    do_arc_consistency,
+                    do_mrv,
+                    do_lcv,
+                    refresher):
+             # Populate the answer board with the solution
+            for i in range(n):
+                for j in range(n):
+                    board.answer_board[i][j] = value(x[i][j])
+                    board.guess_board = board.empty_board
+            print('answer:', board.answer_board)
+            return True
+        else:
+            return False
     
     def solve(self, 
               algorithm: str, 
