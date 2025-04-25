@@ -39,37 +39,34 @@ class Layout:
         Solves the Sudoku puzzle using the PyCSP3 solver.
         Returns True if solution found, False otherwise.
         """
-        # Clear any previous model
         clear()
 
         n = 9
-        # Create a 9x9 array of variables with domain 1-9
         x = VarArray(size=[n, n], dom=range(1, n + 1))
 
         clues = board.layout_board
-        satisfy(
-            # imposing distinct values on each row and each column
-            AllDifferent(x, matrix=True),
 
-            # imposing distinct values on each block  tag(blocks)
-            [AllDifferent(x[i:i + 3, j:j + 3]) for i in [0, 3, 6] for j in [0, 3, 6]],
+        row_constraints = [AllDifferent(x[i]) for i in range(n)]
+        col_constraints = [AllDifferent([x[i][j] for i in range(n)]) for j in range(n)]
+        block_constraints = [
+            AllDifferent([x[r + dr][c + dc] for dr in range(3) for dc in range(3)])
+            for r in (0, 3, 9) for c in (0, 3, 9)
+        ]
+        clue_constraints = [x[i][j] == clues[i][j]
+                            for i in range(n) for j in range(n)
+                            if clues[i][j] > 0]
 
-            # imposing clues  tag(clues)
-            [x[i][j] == clues[i][j] for i in range(9) for j in range(9) if clues and clues[i][j] > 0]
-        )
+        satisfy(*row_constraints, *col_constraints, *block_constraints, *clue_constraints)
 
-        # Solve the CSP
+        board.guess_board = board.empty_board
+
         if solve() is SAT:
-            # Populate the answer board with the solution
             for i in range(n):
                 for j in range(n):
-                    board.answer_board[i][j] = value(x[i][j])
-                    board.guess_board = board.empty_board
-            print('answer:', board.answer_board)
+                    board.answer_board[i][j] = int(value(x[i][j]))
             return True
-        else:
-            return False
 
+        return False
 
     def mycsp_solve(self, 
                     board: Board,
@@ -84,19 +81,16 @@ class Layout:
         Solves the Sudoku puzzle using our csp solver (mycsp) with various heuristics.
         Returns True if solution found, False otherwise.
         """
-        # Clear any previous model
         clear()
 
         n = 9
-
         x = myVarArray(name="my_variables", size=[n ,n], dom=range(1, n + 1))
         my_constraints = []
-        # 1) “Clue” constraints (unary) for the given board
+        # 1) Clue constraints 
         for i in range(n):
             for j in range(n):
                 clue = board.layout_board[i][j]
                 if clue != 0:
-                    # x[i][j] == clue
                     c = myUnaryConstraint(var=x[i][j],
                                         num=clue,
                                         relation="=",
@@ -137,11 +131,10 @@ class Layout:
                     do_mrv,
                     do_lcv,
                     refresher):
-             # Populate the answer board with the solution
             for i in range(n):
                 for j in range(n):
                     board.answer_board[i][j] = value(x[i][j])
-                    board.guess_board = board.empty_board
+            board.guess_board = board.empty_board
             print('answer:', board.answer_board)
             return True
         else:

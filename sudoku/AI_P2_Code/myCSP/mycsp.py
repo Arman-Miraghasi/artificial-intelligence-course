@@ -6,7 +6,6 @@ from board import Board
 from refresher import Refresher
 
 from queue import Queue
-from collections import deque
 
 # my_variables = [] is declared in myVariable.py
 constraint_list = []
@@ -76,8 +75,14 @@ def node_consistency(refresher: Refresher) -> bool:
     :return: True if node consistency is maintained, False otherwise.
     """
     for v in my_variables:
-        if v.value is not None:
-            if not g.is_node_satisfied(v, v.value):
+        removed = set()
+        for d in list(v.remaining_domain):
+            if not g.is_node_satisfied(v, d):
+                v.remove_from_domain(d)
+                removed.add(d)
+        if removed:
+            refresher.refresh_screen()
+            if not v.remaining_domain:
                 return False
     return True
 
@@ -101,41 +106,31 @@ def backtrack(do_arc_consistency: bool, do_mrv: bool, do_lcv: bool, refresher: R
     Use `refresher.refresh_screen()` in middle of your code to update the sudoku on screen.
     :return: True if a solution is found, False otherwise.
     """
-    # Update UI before any work
-    refresher.refresh_screen()
-
-    # 1. Check for completion
     if g.is_assignment_complete():
         return True
 
-    # 2. Select the next variable to assign
     var = select_unassigned_variable(do_mrv)
 
-    # 3. Try each value in the chosen order
-    for value in order_domain_values(var, do_lcv):
-        # Assign value and check local consistency
-        var.value = value
+    for val in order_domain_values(var, do_lcv):
+        var.value = val
         set_doms_to_values()
+        refresher.refresh_screen()
 
         if g.is_assignment_consistent(var):
-            # Backup domains before inference
             backup = extract_domains()
 
-            # 4. Inference step (forward checking or AC)
             if inference(do_arc_consistency, refresher):
-                # Recursive call
                 if backtrack(do_arc_consistency, do_mrv, do_lcv, refresher):
                     return True
 
-            # Restore domains if inference or deeper search failed
             restore_domains(backup)
+            set_doms_to_values()
+            refresher.refresh_screen()
 
-        # Unassign variable before next trial
         var.value = None
-        # Optional UI update after unassignment
+        set_doms_to_values()
         refresher.refresh_screen()
 
-    # 5. No valid assignment found for this branch
     return False
 
 def inference(do_arc_consistency: bool, refresher: Refresher) -> bool:
@@ -230,7 +225,6 @@ def static_order_domains(v: myVariable) -> List[int]:
     """
     Returns the values in `v.remaining_domain` in ascending order.
     """
-    # Ensure iterable and return sorted list
     return sorted(list(v.remaining_domain))
 
 def least_constraining_value(v: myVariable) -> List[int]:
@@ -238,7 +232,18 @@ def least_constraining_value(v: myVariable) -> List[int]:
     Orders the values in the domain of `v` based on how few constraints they impose on neighboring variables.  
     Values that allow the most options for neighboring variables are prioritized.
     """
-    # YOUR CODE
+    scores = []
+    print("remaining:",v.remaining_domain)
+    for a in v.remaining_domain:
+        pruned = 0
+        for u in g.neighbors(v):
+            for b in u.remaining_domain:
+                if not g.is_arc_satisfied(v, u, a, b):
+                    pruned += 1
+        scores.append((pruned, a))
+    scores.sort(key=lambda pair: (pair[0], pair[1]))
+    print("lcv:",[a for _, a in scores] )
+    return [a for _, a in scores]
 
 def extract_domains() -> Dict[myVariable, List[int]]:
     """
