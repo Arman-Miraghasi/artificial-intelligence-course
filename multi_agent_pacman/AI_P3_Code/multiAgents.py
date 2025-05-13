@@ -39,10 +39,10 @@ class ReflexAgent(Agent):
         some Directions.X for some X in the set {NORTH, SOUTH, WEST, EAST, STOP}
         """
         # Collect legal moves and successor states
-        legalMoves = gameState.getLegalActions()
+        legalMoves = gameState.getLegalActions()  # ['Stop', 'North', 'South']
 
         # Choose one of the best actions
-        scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
+        scores = [self.evaluationFunction(gameState, action) for action in legalMoves] # [144.0, 134.0, 134.0]
         bestScore = max(scores)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices) # Pick randomly among the best
@@ -69,12 +69,39 @@ class ReflexAgent(Agent):
         # Useful information you can extract from a GameState (pacman.py)
         successorGameState = currentGameState.generatePacmanSuccessor(action)
         newPos = successorGameState.getPacmanPosition()
-        newFood = successorGameState.getFood()
-        newGhostStates = successorGameState.getGhostStates()
-        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
+        newFood = successorGameState.getFood().asList()
+        newGhostStates  = successorGameState.getGhostStates()
+        newScaredTimes  = [ghostState.scaredTimer for ghostState in newGhostStates ]
+        
+        # Base score
+        score = successorGameState.getScore()
 
-        "*** YOUR CODE HERE ***"
-        return successorGameState.getScore()
+        # Food proximity: closer food -> higher bonus
+        if newFood:
+            dists = [manhattanDistance(newPos, food) for food in newFood]
+            minFoodDist = min(dists)
+            score += 1.0 / (minFoodDist + 1)
+
+        # Ghost interaction
+        for idx, gs in enumerate(newGhostStates ):
+            ghostPos = gs.getPosition()
+            dist = manhattanDistance(newPos, ghostPos)
+            if newScaredTimes [idx] > 0:
+                # chase scared ghosts: closer -> bigger reward
+                score += 2.0 / (dist + 1)
+            else:
+                # avoid active ghosts: too close -> heavy penalty
+                if dist > 0:
+                    score -= 2.0 / dist
+                else:
+                    # collision: worst case
+                    return -float('inf')
+
+        # Encourage not stopping
+        if action == Directions.STOP:
+            score -= 0.5
+
+        return score
 
 def scoreEvaluationFunction(currentGameState):
     """
