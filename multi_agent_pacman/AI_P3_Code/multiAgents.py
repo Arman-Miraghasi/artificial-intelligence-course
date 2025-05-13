@@ -83,7 +83,7 @@ class ReflexAgent(Agent):
             score += 1.0 / (minFoodDist + 1)
 
         # Ghost interaction
-        for idx, gs in enumerate(newGhostStates ):
+        for idx, gs in enumerate(newGhostStates):
             ghostPos = gs.getPosition()
             dist = manhattanDistance(newPos, ghostPos)
             if newScaredTimes [idx] > 0:
@@ -162,7 +162,61 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        best_action, _ = self._evaluate(gameState, agentIndex=0, currentDepth=0)
+        return best_action
+    
+    def _evaluate(self, state, agentIndex, currentDepth):
+        """
+        Recursive dispatch method based on agent type and terminal conditions.
+        """
+        totalAgents = state.getNumAgents()
+
+        if agentIndex >= totalAgents:
+            agentIndex = 0
+            currentDepth += 1
+
+        # Terminal state or max depth reached
+        if currentDepth == self.depth or state.isWin() or state.isLose():
+            return None, self.evaluationFunction(state)
+
+        if agentIndex == 0:
+            return self._maximize(state, agentIndex, currentDepth)
+        else:
+            return self._minimize(state, agentIndex, currentDepth)
+
+    def _maximize(self, state, agentIndex, currentDepth):
+        """
+        Max (Pacman) chooses the action with the highest value.
+        """
+        maxValue = float("-inf")
+        bestAction = None
+
+        for action in state.getLegalActions(agentIndex):
+            successor = state.generateSuccessor(agentIndex, action)
+            _, value = self._evaluate(successor, agentIndex + 1, currentDepth)
+
+            if value > maxValue:
+                maxValue = value
+                bestAction = action
+
+        return bestAction, maxValue
+
+    def _minimize(self, state, agentIndex, currentDepth):
+        """
+        Min (Ghosts) choose the action with the lowest value.
+        """
+        minValue = float("inf")
+        bestAction = None
+
+        for action in state.getLegalActions(agentIndex):
+            successor = state.generateSuccessor(agentIndex, action)
+            _, value = self._evaluate(successor, agentIndex + 1, currentDepth)
+
+            if value < minValue:
+                minValue = value
+                bestAction = action
+
+        return bestAction, minValue
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
