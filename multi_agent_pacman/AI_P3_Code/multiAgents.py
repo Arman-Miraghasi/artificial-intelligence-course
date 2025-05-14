@@ -294,7 +294,51 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        numAgents = gameState.getNumAgents()
+        bestAction = None
+        bestValue = float('-inf')
+
+        # Pacman's turn (max)
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            val = self._expectimax(successor, agentIndex=1, currentDepth=0, numAgents=numAgents)
+            if val > bestValue:
+                bestValue, bestAction = val, action
+        return bestAction
+
+    def _expectimax(self, state, agentIndex, currentDepth, numAgents):
+        # Terminal check
+        if state.isWin() or state.isLose() or currentDepth == self.depth:
+            return self.evaluationFunction(state)
+
+        # Max node for Pacman
+        if agentIndex == 0:
+            return self._max_value(state, agentIndex, currentDepth, numAgents)
+        # Expectation node for ghosts
+        return self._expected_value(state, agentIndex, currentDepth, numAgents)
+
+    def _max_value(self, state, agentIndex, currentDepth, numAgents):
+        v = float('-inf')
+        for action in state.getLegalActions(agentIndex):
+            succ = state.generateSuccessor(agentIndex, action)
+            nextAgent, nextDepth = agentIndex + 1, currentDepth
+            if agentIndex == numAgents - 1:
+                nextAgent, nextDepth = 0, currentDepth + 1
+            v = max(v, self._expectimax(succ, nextAgent, nextDepth, numAgents))
+        return v
+
+    def _expected_value(self, state, agentIndex, currentDepth, numAgents):
+        actions = state.getLegalActions(agentIndex)
+        if not actions:
+            return self.evaluationFunction(state)
+        total = 0
+        for action in actions:
+            succ = state.generateSuccessor(agentIndex, action)
+            nextAgent, nextDepth = agentIndex + 1, currentDepth
+            if agentIndex == numAgents - 1:
+                nextAgent, nextDepth = 0, currentDepth + 1
+            total += self._expectimax(succ, nextAgent, nextDepth, numAgents)
+        return total / len(actions)
 
 def betterEvaluationFunction(currentGameState):
     """
