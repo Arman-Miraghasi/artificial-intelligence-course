@@ -348,15 +348,41 @@ def betterEvaluationFunction(currentGameState):
     Don't forget to use pacmanPosition, foods, scaredTimers, ghostPositions!
     DESCRIPTION: <write something here so we know what you did>
     """
+    def closest_dot(cur_pos, food_pos):
+        return min(util.manhattanDistance(food, cur_pos) for food in food_pos) if food_pos else 1
 
-    pacmanPosition = currentGameState.getPacmanPosition()
-    foods = currentGameState.getFood()
-    ghostStates = currentGameState.getGhostStates()
-    scaredTimers = [ghostState.scaredTimer for ghostState in ghostStates]
-    ghostPositions = currentGameState.getGhostPositions()
+    def closest_ghost(cur_pos, ghosts):
+        return min(util.manhattanDistance(ghost.getPosition(), cur_pos) for ghost in ghosts) if ghosts else 1
+
+    def food_stuff(cur_pos, food_positions):
+        return sum(util.manhattanDistance(food, cur_pos) for food in food_positions)
+
+    pacman_pos = currentGameState.getPacmanPosition()
+    score = currentGameState.getScore()
+    food = currentGameState.getFood().asList()
+    capsules = currentGameState.getCapsules()
+    ghosts = currentGameState.getGhostStates()
+    scaredTimers = [ghost.scaredTimer for ghost in ghosts]
+
+    closest_dot_dist = closest_dot(pacman_pos, food)
+    closest_ghost_dist = closest_ghost(pacman_pos, ghosts)
     
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Adjust score based on dot and ghost distances
+    score *= 2 if closest_dot_dist < closest_ghost_dist + 3 else 1
+    score -= 0.35 * food_stuff(pacman_pos, food)
+    score -= 50 * len(capsules)
+
+    # Handle scared ghosts
+    for ghost, scaredTime in zip(ghosts, scaredTimers):
+        dist = util.manhattanDistance(pacman_pos, ghost.getPosition())
+        if scaredTime > 0:
+            # The closer the scared ghost, the better
+            score += 200 / (dist + 1)
+        elif dist <= 1:
+            # Penalize being too close to an active ghost
+            score -= 100
+
+    return score
 
 # Abbreviation
 better = betterEvaluationFunction
