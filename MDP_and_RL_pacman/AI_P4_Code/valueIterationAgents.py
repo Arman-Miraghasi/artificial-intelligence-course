@@ -26,11 +26,9 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
-import mdp, util
+import util
 from mdp import MarkovDecisionProcess
-
 from learningAgents import ValueEstimationAgent
-import collections
 
 class ValueIterationAgent(ValueEstimationAgent):
     """
