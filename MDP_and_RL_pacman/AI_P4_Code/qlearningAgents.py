@@ -104,8 +104,6 @@ class QLearningAgent(ReinforcementAgent):
             return random.choice(legalActions)
         return self.computeActionFromQValues(state)
 
-        return action
-
     def update(self, state, action, nextState, reward):
         """
           The parent class calls this to observe a
@@ -168,7 +166,7 @@ class ApproximateQAgent(PacmanQAgent):
        should work as is.
     """
     def __init__(self, extractor='IdentityExtractor', **args):
-        self.featExtractor = util.lookup(extractor, globals())()
+        self.featExtractor:SimpleExtractor = util.lookup(extractor, globals())()
         PacmanQAgent.__init__(self, **args)
         self.weights = util.Counter()
 
@@ -181,14 +179,32 @@ class ApproximateQAgent(PacmanQAgent):
           where * is the dotProduct operator
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        features:dict = self.featExtractor.getFeatures(state, action)
+        q_value = 0.0
+        for featureName, featureValue in features.items():
+            q_value += self.weights[featureName] * featureValue
+        return q_value
 
     def update(self, state, action, nextState, reward):
         """
            Should update your weights based on transition
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        currentQ = self.getQValue(state, action)
+
+        legalNextActions = self.getLegalActions(nextState)
+        if legalNextActions:
+            bestNextQ = max(self.getQValue(nextState, nextAction) for nextAction in legalNextActions)
+        else:
+            bestNextQ = 0.0
+
+        difference = (reward + self.discount * bestNextQ) - currentQ
+
+        features = self.featExtractor.getFeatures(state, action)
+
+        for featureName, featureValue in features.items():
+            self.weights[featureName] += self.alpha * difference * featureValue
+        return
 
     def final(self, state):
         "Called at the end of each game."
@@ -199,4 +215,4 @@ class ApproximateQAgent(PacmanQAgent):
         if self.episodesSoFar == self.numTraining:
             # you might want to print your weights here for debugging
             "*** YOUR CODE HERE ***"
-            pass
+            print("Final weights:", self.weights)
